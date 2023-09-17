@@ -6,9 +6,12 @@ import androidx.gridlayout.widget.GridLayout;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.w3c.dom.Text;
@@ -27,9 +30,23 @@ public class MainActivity extends AppCompatActivity {
     // when a TextView is clicked, we know which cell it is
     private ArrayList<TextView> cell_tvs;
     private Set<TextView> mineSet;
+    final Handler handler = new Handler();
+
+    boolean isPick = true;
+
+    int seconds = 0;
+    boolean running = true;
 
     String mineString;
     String flagString;
+    String[] buttonOptions;
+
+    TextView flagCount;
+
+    String pickString;
+    int mineCount = 1;
+
+    int cellsRevealed = 0;
 
     private int dpToPixel(int dp) {
         float density = Resources.getSystem().getDisplayMetrics().density;
@@ -40,15 +57,29 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        initGame();
+        runTimer();
 
+    }
+
+    private void initGame(){
+        running = true;
+        seconds = 0;
+        cellsRevealed = 0;
         cell_tvs = new ArrayList<TextView>();
         mineSet = new HashSet<TextView>();
         mineString = getString(R.string.mine);
         flagString = getString(R.string.flag);
-
+        pickString = getString(R.string.pick);
+        buttonOptions = new String[]{pickString, flagString};
+        flagCount = (TextView) findViewById(R.id.textView4);
 
         // Method (2): add four dynamically created cells
         GridLayout grid = (GridLayout) findViewById(R.id.gridLayout01);
+        TextView button = (TextView) findViewById(R.id.textView2);
+        button.setOnClickListener(this::onClickTV);
+        button.setTag("B");
+
         for (int i = 0; i<=11; i++) {
             for (int j=0; j<=9; j++) {
                 TextView tv = new TextView(this);
@@ -59,19 +90,17 @@ public class MainActivity extends AppCompatActivity {
                 tv.setTextColor(Color.GREEN);
                 tv.setBackgroundColor(Color.GREEN);
                 tv.setOnClickListener(this::onClickTV);
-
+                tv.setTag("NB");
                 GridLayout.LayoutParams lp = new GridLayout.LayoutParams();
                 lp.setMargins(dpToPixel(2), dpToPixel(2), dpToPixel(2), dpToPixel(2));
                 lp.rowSpec = GridLayout.spec(i);
                 lp.columnSpec = GridLayout.spec(j);
-
                 grid.addView(tv, lp);
-                //tv.setText(cell_tvs.size() + "");
                 tv.setId(cell_tvs.size());
                 cell_tvs.add(tv);
             }
         }
-        generateMines(10);
+        generateMines(mineCount);
     }
 
     private int findIndexOfCellTextView(TextView tv) {
@@ -82,32 +111,104 @@ public class MainActivity extends AppCompatActivity {
         return -1;
     }
 
+    private void runTimer() {
+        final TextView timeView = (TextView) findViewById(R.id.textView5);
+        handler.post (new Runnable() {
+            @Override
+            public void run() {
+                int secs = seconds;
+                String time = String.format("%03d", secs);
+                timeView.setText(time);
+                if (running) {
+                    seconds++;
+                }
+                handler.postDelayed (this, 1000);
+            }
+        });
+    }
+
     public void onClickTV(View view){
         TextView tv = (TextView) view;
         List<TextView> adj = getAdjacentTVs(tv);
+
+        if (tv.getTag().equals("B")){
+            isPick = !isPick;
+            tv.setText(buttonOptions[isPick ? 0 : 1]);
+            return;
+        }
+        if(isPick){
+            if(tv.getText().toString().contains(flagString)) {
+                return;
+            }
+            if(tv.getTag().equals("BB")){
+                running = false;
+                revealBombs();
+                revealEndScreen(false);
+            }
+        } else {
+            System.out.println("HERE");
+            if(tv.getText().toString().contains(flagString)){
+                tv.setText(tv.getText().toString().substring(2,tv.getText().length()));
+                incrementCellScore(flagCount);
+            } else if(tv.getCurrentTextColor() == Color.GREEN && stoi(flagCount.getText().toString()) > 0){
+                tv.setText(flagString+tv.getText());
+                decrementCellScore(flagCount);
+            }
+            return;
+        }
         revealCell(tv);
-//        for(TextView x : adj){
-//            flipCellColor(x);
-//        }
-//        int n = findIndexOfCellTextView(tv);
-//        int i = n/COLUMN_COUNT;
-//        int j = n%COLUMN_COUNT;
-        //tv.setText(String.valueOf(i)+String.valueOf(j));
+        if(cellsRevealed >= 120-mineCount)
+        {
+            running = false;
+            revealEndScreen(true);
+        }
+
 
     }
 
     private void flipCellColor(TextView tv){
-//        if (tv.getCurrentTextColor() == Color.GRAY) {
-//            tv.setTextColor(Color.GREEN);
-//            tv.setBackgroundColor(Color.parseColor("lime"));
-//        } else {
-//            tv.setTextColor(Color.GRAY);
-//            tv.setBackgroundColor(Color.LTGRAY);
-//        }
-        //if (tv.getCurrentTextColor() == Color.GRAY) {
-            tv.setBackgroundColor(Color.parseColor("lime"));
-        //}
+        tv.setBackgroundColor(Color.parseColor("lime"));
     }
+
+    private void revealEndScreen(boolean won){
+        handler.removeCallbacksAndMessages(null); // Stop the timer
+        setContentView(R.layout.end_screen);
+        Button restartButton = findViewById(R.id.button);
+
+        // Set a click listener for the button
+        restartButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Add the action you want to perform when the button is clicked
+                // For example, you can start a new game or return to the main menu.
+                // Replace this with your desired behavior.
+                setContentView(R.layout.activity_main);
+                initGame();
+                runTimer();
+                // Add your code here to restart the game or navigate to a different screen.
+            }
+        });
+        String x = won ? "won. Good Job!" : "lost. Try Again!";
+        TextView winMessageTextView = findViewById(R.id.winMessageTextView);
+
+        winMessageTextView.setText("Used " + seconds + " seconds. You "+x);
+        //endLayout.setVisibility(View.VISIBLE);
+
+    }
+
+    private void revealBombs(){
+        for(TextView tv : mineSet){
+            tv.setText(mineString);
+
+            // Multiply each random number by 255 to convert it to a byte value.
+            int red = (int) (Math.random() * 255);
+            int green = (int) (Math.random() * 255);
+            int blue = (int) (Math.random() * 255);
+
+            tv.setBackgroundColor(Color.rgb(red, green,blue));
+        }
+    }
+
     //Empties set then populates with 4 mines
     public void generateMines(int mineCount){
         mineSet.clear();
@@ -115,10 +216,11 @@ public class MainActivity extends AppCompatActivity {
             int randomIndex = (int) (Math.random() * cell_tvs.size());
             TextView tv = cell_tvs.get(randomIndex);
             if(!mineSet.contains(tv)){
-                tv.setText(mineString);
+                tv.setText("B");
+                tv.setTag("BB");
                 for(TextView u : getAdjacentTVs(tv)){
                     String s = u.getText().toString();
-                    if(!(s.equals(mineString) || s.equals(flagString))) {
+                    if(!(u.getTag().equals("BB") || s.equals(flagString))) {
                         incrementCellScore(u);
                     }
                 }
@@ -129,14 +231,21 @@ public class MainActivity extends AppCompatActivity {
 
     public void incrementCellScore(TextView tv){
         int currCellScore = stoi(tv.getText().toString());
-        tv.setText((currCellScore+1) + "");
+        tv.setText(new StringBuilder().append(currCellScore + 1).append("").toString());
+    }
+
+    public void decrementCellScore(TextView tv){
+        int currCellScore = stoi(tv.getText().toString());
+        tv.setText(new StringBuilder().append(currCellScore - 1).append("").toString());
     }
 
     public void revealCell(TextView tv){
+        cellsRevealed++;
         if(tv.getCurrentTextColor() == Color.GREEN){
             tv.setTextColor(Color.BLACK);
             tv.setBackgroundColor(Color.GRAY);
         }
+
         for(TextView x : getAdjacentTVs(tv)){
             if(x.getText().toString().equals("") && x.getCurrentTextColor() == Color.GREEN){
                 revealCell(x);
@@ -188,7 +297,6 @@ public class MainActivity extends AppCompatActivity {
 
         for(Coordinate x : coordinateList){
             if(isCoordValid(x)){
-                System.out.println(x.x + " : " + x.y);
                 res.add(cell_tvs.get(getI(x.x,x.y)));
             }
         }
