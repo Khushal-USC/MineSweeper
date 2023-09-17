@@ -56,8 +56,8 @@ public class MainActivity extends AppCompatActivity {
                 tv.setWidth( dpToPixel(34) );
                 tv.setTextSize( 20 ); //dpToPixel(32)
                 tv.setTextAlignment(TextView.TEXT_ALIGNMENT_CENTER);
-                tv.setTextColor(Color.BLACK);
-                tv.setBackgroundColor(Color.GRAY);
+                tv.setTextColor(Color.GREEN);
+                tv.setBackgroundColor(Color.GREEN);
                 tv.setOnClickListener(this::onClickTV);
 
                 GridLayout.LayoutParams lp = new GridLayout.LayoutParams();
@@ -85,10 +85,10 @@ public class MainActivity extends AppCompatActivity {
     public void onClickTV(View view){
         TextView tv = (TextView) view;
         List<TextView> adj = getAdjacentTVs(tv);
-        flipCellColor(tv);
-        for(TextView x : adj){
-            flipCellColor(x);
-        }
+        revealCell(tv);
+//        for(TextView x : adj){
+//            flipCellColor(x);
+//        }
 //        int n = findIndexOfCellTextView(tv);
 //        int i = n/COLUMN_COUNT;
 //        int j = n%COLUMN_COUNT;
@@ -130,6 +130,18 @@ public class MainActivity extends AppCompatActivity {
     public void incrementCellScore(TextView tv){
         int currCellScore = stoi(tv.getText().toString());
         tv.setText((currCellScore+1) + "");
+    }
+
+    public void revealCell(TextView tv){
+        if(tv.getCurrentTextColor() == Color.GREEN){
+            tv.setTextColor(Color.BLACK);
+            tv.setBackgroundColor(Color.GRAY);
+        }
+        for(TextView x : getAdjacentTVs(tv)){
+            if(x.getText().toString().equals("") && x.getCurrentTextColor() == Color.GREEN){
+                revealCell(x);
+            }
+        }
     }
 
     private int stoi(String s){
