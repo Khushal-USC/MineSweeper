@@ -36,6 +36,8 @@ public class MainActivity extends AppCompatActivity {
 
     int seconds = 0;
     boolean running = true;
+    boolean gameEnd = false;
+    boolean won = false;
 
     String mineString;
     String flagString;
@@ -64,6 +66,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void initGame(){
         running = true;
+        gameEnd = false;
         seconds = 0;
         cellsRevealed = 0;
         cell_tvs = new ArrayList<TextView>();
@@ -74,7 +77,18 @@ public class MainActivity extends AppCompatActivity {
         buttonOptions = new String[]{pickString, flagString};
         flagCount = (TextView) findViewById(R.id.textView4);
 
-        // Method (2): add four dynamically created cells
+        View parentView = findViewById(R.id.parentView);
+
+        parentView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(gameEnd == true){
+                    gameEnd = false;
+                    revealEndScreen(won);
+                }
+            }
+        });
+
         GridLayout grid = (GridLayout) findViewById(R.id.gridLayout01);
         TextView button = (TextView) findViewById(R.id.textView2);
         button.setOnClickListener(this::onClickTV);
@@ -130,7 +144,11 @@ public class MainActivity extends AppCompatActivity {
     public void onClickTV(View view){
         TextView tv = (TextView) view;
         List<TextView> adj = getAdjacentTVs(tv);
-
+        if(gameEnd == true){
+            gameEnd = false;
+            revealEndScreen(won);
+            return;
+        }
         if (tv.getTag().equals("B")){
             isPick = !isPick;
             tv.setText(buttonOptions[isPick ? 0 : 1]);
@@ -142,8 +160,9 @@ public class MainActivity extends AppCompatActivity {
             }
             if(tv.getTag().equals("BB")){
                 running = false;
+                gameEnd = true;
                 revealBombs();
-                revealEndScreen(false);
+                won = false;
             }
         } else {
             if(tv.getText().toString().contains(flagString)){
@@ -159,7 +178,9 @@ public class MainActivity extends AppCompatActivity {
         if(cellsRevealed >= 120-mineCount)
         {
             running = false;
-            revealEndScreen(true);
+            revealBombs();
+            gameEnd = true;
+            won = true;
         }
 
 
@@ -174,17 +195,12 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.end_screen);
         Button restartButton = findViewById(R.id.button);
 
-        // Set a click listener for the button
         restartButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Add the action you want to perform when the button is clicked
-                // For example, you can start a new game or return to the main menu.
-                // Replace this with your desired behavior.
                 setContentView(R.layout.activity_main);
                 initGame();
                 runTimer();
-                // Add your code here to restart the game or navigate to a different screen.
             }
         });
         String x = won ? "won. Good Job!" : "lost. Try Again!";
