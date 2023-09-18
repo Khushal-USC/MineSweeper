@@ -44,7 +44,7 @@ public class MainActivity extends AppCompatActivity {
     TextView flagCount;
 
     String pickString;
-    int mineCount = 1;
+    int mineCount = 4;
 
     int cellsRevealed = 0;
 
@@ -146,7 +146,6 @@ public class MainActivity extends AppCompatActivity {
                 revealEndScreen(false);
             }
         } else {
-            System.out.println("HERE");
             if(tv.getText().toString().contains(flagString)){
                 tv.setText(tv.getText().toString().substring(2,tv.getText().length()));
                 incrementCellScore(flagCount);
@@ -192,7 +191,6 @@ public class MainActivity extends AppCompatActivity {
         TextView winMessageTextView = findViewById(R.id.winMessageTextView);
 
         winMessageTextView.setText("Used " + seconds + " seconds. You "+x);
-        //endLayout.setVisibility(View.VISIBLE);
 
     }
 
@@ -200,7 +198,6 @@ public class MainActivity extends AppCompatActivity {
         for(TextView tv : mineSet){
             tv.setText(mineString);
 
-            // Multiply each random number by 255 to convert it to a byte value.
             int red = (int) (Math.random() * 255);
             int green = (int) (Math.random() * 255);
             int blue = (int) (Math.random() * 255);
@@ -242,12 +239,17 @@ public class MainActivity extends AppCompatActivity {
     public void revealCell(TextView tv){
         cellsRevealed++;
         if(tv.getCurrentTextColor() == Color.GREEN){
+            if(tv.getText().toString().equals(flagString)){
+                tv.setText("");
+            }
             tv.setTextColor(Color.BLACK);
             tv.setBackgroundColor(Color.GRAY);
         }
 
         for(TextView x : getAdjacentTVs(tv)){
-            if(x.getText().toString().equals("") && x.getCurrentTextColor() == Color.GREEN){
+            if(x.getCurrentTextColor() == Color.GREEN
+                    && (x.getText().toString().equals("") ||
+                    x.getText().toString().equals(flagString))){
                 revealCell(x);
             }
         }
