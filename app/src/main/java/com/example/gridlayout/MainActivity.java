@@ -159,6 +159,7 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
             if(tv.getTag().equals("BB")){
+                handler.removeCallbacksAndMessages(null);
                 running = false;
                 gameEnd = true;
                 revealBombs();
@@ -177,6 +178,7 @@ public class MainActivity extends AppCompatActivity {
         revealCell(tv);
         if(cellsRevealed >= 120-mineCount)
         {
+            handler.removeCallbacksAndMessages(null);
             running = false;
             revealBombs();
             gameEnd = true;
@@ -206,7 +208,7 @@ public class MainActivity extends AppCompatActivity {
         String x = won ? "won. Good Job!" : "lost. Try Again!";
         TextView winMessageTextView = findViewById(R.id.winMessageTextView);
 
-        winMessageTextView.setText("Used " + seconds + " seconds. You "+x);
+        winMessageTextView.setText("Used " + (seconds-1) + " seconds. You "+x);
 
     }
 
